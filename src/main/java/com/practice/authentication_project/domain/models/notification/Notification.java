@@ -1,7 +1,7 @@
 package com.practice.authentication_project.domain.models.notification;
 
 import com.practice.authentication_project.domain.models.tenant.Tenant;
-import com.practice.authentication_project.domain.models.user.User;
+import com.practice.authentication_project.domain.models.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -38,7 +38,7 @@ public class Notification {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private UserEntity user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id", nullable = false)

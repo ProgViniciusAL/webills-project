@@ -4,7 +4,7 @@ import com.practice.authentication_project.domain.models.notification.Notificati
 import com.practice.authentication_project.domain.models.notification.repository.NotificationRepository;
 import com.practice.authentication_project.domain.models.tenant.Tenant;
 import com.practice.authentication_project.domain.models.tenant.repository.TenantRepository;
-import com.practice.authentication_project.domain.models.user.User;
+import com.practice.authentication_project.domain.models.user.UserEntity;
 import com.practice.authentication_project.domain.models.user.repository.UserRepository;
 import com.practice.authentication_project.shared.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ public class NotificationService {
 
     @Transactional
     public Notification createNotification(Notification notification, Long userId, UUID tenantId) {
-        User user = userRepository.findById(userId)
+        UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with id: " + tenantId));

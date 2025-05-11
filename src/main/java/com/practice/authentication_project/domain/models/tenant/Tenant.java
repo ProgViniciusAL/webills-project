@@ -6,7 +6,7 @@ import com.practice.authentication_project.domain.models.bill.payment.BillPaymen
 import com.practice.authentication_project.domain.models.category.Category;
 import com.practice.authentication_project.domain.models.notification.Notification;
 import com.practice.authentication_project.domain.models.transaction.Transaction;
-import com.practice.authentication_project.domain.models.user.User;
+import com.practice.authentication_project.domain.models.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -40,7 +40,7 @@ public class Tenant {
     private OffsetDateTime createdAt;
 
     @ManyToMany(mappedBy = "tenants", fetch = FetchType.LAZY)
-    private Set<User> users = new HashSet<>();
+    private Set<UserEntity> users = new HashSet<>();
 
     @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Account> accounts = new ArrayList<>();
