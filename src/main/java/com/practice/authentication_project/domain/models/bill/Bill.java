@@ -4,9 +4,13 @@ import com.practice.authentication_project.domain.models.bill.payment.BillPaymen
 import com.practice.authentication_project.domain.models.category.Category;
 import com.practice.authentication_project.domain.models.tenant.Tenant;
 import com.practice.authentication_project.domain.models.transaction.Transaction;
+import com.practice.authentication_project.shared.dto.bills.BillsDTO;
+import com.practice.authentication_project.shared.dto.bills.BillsUpdateDTO;
+import com.practice.authentication_project.shared.exception.ResourceNotFoundException;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -39,7 +43,10 @@ public class Bill {
     private LocalDate dueDate;
 
     @Column(name = "recurrence", length = 255)
-    private String recurrence; // Considere usar um Enum: NONE, MONTHLY, ANNUALLY
+    private String recurrence;
+
+    @Column(name = "bill_status", nullable = false)
+    private Status status;
 
     @Column(name = "description", length = 255)
     private String description;
@@ -61,4 +68,36 @@ public class Bill {
 
     @OneToMany(mappedBy = "bill", fetch = FetchType.LAZY) // Transações associadas a esta conta
     private List<Transaction> transactions = new ArrayList<>();
+
+    public void updateFrom(BillsUpdateDTO updatedBill, Category newCategory) {
+        this.setName(updatedBill.name());
+        this.setAmount(updatedBill.amount());
+        this.setDueDate(updatedBill.dueDate());
+        this.setRecurrence(updatedBill.recurrence());
+        this.setDescription(updatedBill.description());
+
+        if (!newCategory.getTenant().getId().equals(tenant.getId())) {
+            throw new AccessDeniedException("You are not authorized to use this category.");
+        }
+
+        this.setCategory(updatedBill.categoryId() != null ? newCategory : null);
+
+    }
+
+    public Bill(BillsDTO updatedBill, Category newCategory, Tenant tenant) {
+
+        this.name = updatedBill.name();
+        this.amount = updatedBill.amount();
+        this.dueDate = updatedBill.dueDate();
+        this.status = Status.valueOf(updatedBill.status());
+        this.recurrence = updatedBill.recurrence();
+        this.description = updatedBill.description();
+        this.tenant = tenant;
+
+        if (!newCategory.getTenant().getId().equals(tenant.getId())) {
+            throw new AccessDeniedException("You are not authorized to use this category.");
+        }
+        this.setCategory(updatedBill.categoryId() != null ? newCategory : null);
+
+    }
 }

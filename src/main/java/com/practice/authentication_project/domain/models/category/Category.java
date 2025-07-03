@@ -33,7 +33,7 @@ public class Category {
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
 
-    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY) // Cascade pode não ser desejável aqui
+    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)// Cascade pode não ser desejável aqui
     private List<Bill> bills = new ArrayList<>();
 
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY) // Cascade pode não ser desejável aqui

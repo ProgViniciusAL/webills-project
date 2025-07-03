@@ -39,4 +39,19 @@ public class BillPayment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
+
+    public BillPayment(Bill bill, Tenant tenant, BigDecimal amount, LocalDate paymentDate) {
+        this.setBill(bill);
+        this.setTenant(tenant);
+        this.setAmountPaid(amount);
+        this.setPaymentDate(paymentDate);
+        this.setFullPayment(calculateFullPayment(bill, amount));
+    }
+
+    private boolean calculateFullPayment(Bill bill, BigDecimal amountPaid) {
+        if(amountPaid.compareTo(bill.getAmount()) > 0 || amountPaid.compareTo(bill.getAmount()) == 0) {
+            return true;
+        }
+        return false;
+    }
 }

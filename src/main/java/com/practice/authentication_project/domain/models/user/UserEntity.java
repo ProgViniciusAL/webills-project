@@ -2,6 +2,8 @@ package com.practice.authentication_project.domain.models.user;
 
 import com.practice.authentication_project.domain.models.notification.Notification;
 import com.practice.authentication_project.domain.models.tenant.Tenant;
+import com.practice.authentication_project.shared.dto.auth.RegisterDTO;
+import com.practice.authentication_project.shared.dto.user.UserResponseDTO;
 import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.CreationTimestamp;
@@ -11,9 +13,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Getter
 @Setter
@@ -45,22 +50,25 @@ public class UserEntity implements UserDetails {
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "timestamp with time zone")
     private OffsetDateTime createdAt;
 
-    // Relacionamento Many-to-Many com Tenant
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "user_tenants",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "tenant_id")
-    )
-    private Set<Tenant> tenants = new HashSet<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id")
+    private Tenant tenant;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Notification> notifications = new ArrayList<>();
 
+    public UserEntity(RegisterDTO registerDTO) {
+        this.setName(registerDTO.username());
+        this.setEmail(registerDTO.email());
+        this.setRole(Role.valueOf("USER"));
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
 
-        return Collections.singletonList(new SimpleGrantedAuthority(this.role.toString()));
+        if(this.role == Role.ADMIN) return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
+        else return List.of(new SimpleGrantedAuthority("USER_ROLE"));
+
     }
 
     @Override

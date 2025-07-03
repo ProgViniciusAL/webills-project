@@ -3,18 +3,18 @@ package com.practice.authentication_project.domain.models.user.service;
 import com.practice.authentication_project.domain.models.user.Role;
 import com.practice.authentication_project.domain.models.user.UserEntity;
 import com.practice.authentication_project.domain.models.user.repository.UserRepository;
-import com.practice.authentication_project.shared.dto.RegisterDTO;
+import com.practice.authentication_project.security.config.jwt.JWTService;
+import com.practice.authentication_project.shared.dto.auth.RegisterDTO;
 import com.practice.authentication_project.shared.exception.ResourceNotFoundException;
-import org.apache.catalina.User;
+import jakarta.servlet.http.HttpServletRequest;
+import org.apache.coyote.Request;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-// Importar BCryptPasswordEncoder se for usar para senhas
-// import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -23,18 +23,15 @@ public class UserService {
     private UserRepository userRepository;
 
     @Autowired
+    private JWTService jwtService;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Transactional
     public UserEntity createUser(RegisterDTO registerDTO) {
-
-        UserEntity newUser = new UserEntity();
-
-        newUser.setName(registerDTO.username());
-        newUser.setEmail(registerDTO.email());
-        newUser.setPasswordHash(passwordEncoder.encode(registerDTO.password()));
-        newUser.setRole(Role.valueOf(registerDTO.role()));
-
+        UserEntity newUser = new UserEntity(registerDTO);
+        newUser.setPasswordHash(passwordEncoder.encode(registerDTO.password())) ;
         return userRepository.save(newUser);
     }
 
@@ -50,7 +47,9 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserEntity getUserByEmail(String email) {
+    public UserEntity getAuthenticatedUser(HttpServletRequest request) {
+        String token = jwtService.recoverToken(request);
+        String email = jwtService.validadeToken(token);
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
     }
@@ -81,10 +80,9 @@ public class UserService {
     */
 
     @Transactional
-    public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("User not found with id: " + id);
-        }
-        userRepository.deleteById(id);
+    public String deleteUser(HttpServletRequest request) {
+        UserEntity user = this.getAuthenticatedUser(request);
+        userRepository.deleteById(user.getId());
+        return "User has been deleted";
     }
 }

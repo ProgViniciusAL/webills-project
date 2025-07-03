@@ -4,6 +4,7 @@ import com.practice.authentication_project.domain.models.category.Category;
 import com.practice.authentication_project.domain.models.category.repository.CategoryRepository;
 import com.practice.authentication_project.domain.models.tenant.Tenant;
 import com.practice.authentication_project.domain.models.tenant.repository.TenantRepository;
+import com.practice.authentication_project.shared.dto.category.CategoryDTO;
 import com.practice.authentication_project.shared.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,11 +23,16 @@ public class CategoryService {
     private TenantRepository tenantRepository;
 
     @Transactional
-    public Category createCategory(Category category, UUID tenantId) {
+    public Category createCategory(CategoryDTO categoryDTO, UUID tenantId) {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found for category creation: " + tenantId));
-        category.setTenant(tenant);
-        return categoryRepository.save(category);
+
+        Category newCategory = new Category();
+        newCategory.setName(categoryDTO.name());
+        newCategory.setType(categoryDTO.type());
+        newCategory.setTenant(tenant);
+
+        return categoryRepository.save(newCategory);
     }
 
     @Transactional(readOnly = true)

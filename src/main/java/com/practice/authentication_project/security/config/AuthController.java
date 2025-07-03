@@ -2,20 +2,25 @@ package com.practice.authentication_project.security.config;
 
 import com.practice.authentication_project.domain.models.user.UserEntity;
 import com.practice.authentication_project.domain.models.user.service.UserService;
-import com.practice.authentication_project.shared.dto.LoginDTO;
-import com.practice.authentication_project.shared.dto.RegisterDTO;
+import com.practice.authentication_project.security.config.jwt.CookieService;
+import com.practice.authentication_project.security.config.jwt.JWTService;
+import com.practice.authentication_project.shared.dto.auth.LoginDTO;
+import com.practice.authentication_project.shared.dto.auth.LoginResponseDTO;
+import com.practice.authentication_project.shared.dto.auth.RegisterDTO;
+import com.practice.authentication_project.shared.dto.auth.RegisterResponseDTO;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -24,30 +29,42 @@ public class AuthController {
     private AuthenticationManager authenticationManager;
 
     @Autowired
+    private CookieService cookieService;
+
+    @Autowired
+    private JWTService jwtService;
+
+    @Autowired
     private UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterDTO register) {
+    public ResponseEntity<RegisterResponseDTO> register(@RequestBody RegisterDTO register) {
 
         if(userService.existsByEmail(register.email())) {
-            return ResponseEntity.badRequest().body("Username is alredy taken");
+            return ResponseEntity.badRequest().body(new RegisterResponseDTO(null, "Username is alredy taken"));
         }
 
-        userService.createUser(register);
+        UserEntity user = userService.createUser(register);
 
-        return ResponseEntity.ok().body("Register success");
+        return ResponseEntity.ok().body(new RegisterResponseDTO(user.getEmail(), "Register sucessfully"));
 
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(LoginDTO loginDTO) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginDTO loginDTO, HttpServletResponse response) {
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDTO.email(), loginDTO.password())
-        );
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        log.info("Limpando cookies de usuário: {}", loginDTO.email());
+        cookieService.clear("token", response);
 
-        return ResponseEntity.ok().body("Login successfully");
+        log.info("Autenticando usuário: {}", loginDTO.email());
+        var usernamePasswordToken = new UsernamePasswordAuthenticationToken(loginDTO.email(), loginDTO.password());
+        var auth = this.authenticationManager.authenticate(usernamePasswordToken);
+
+        var token = jwtService.generateToken((UserEntity) auth.getPrincipal());
+
+        cookieService.create("token", token, response);
+
+        return ResponseEntity.ok().body(new LoginResponseDTO(token, "Login sucessfully"));
 
     }
 

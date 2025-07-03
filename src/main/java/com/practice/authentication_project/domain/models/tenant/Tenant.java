@@ -10,6 +10,7 @@ import com.practice.authentication_project.domain.models.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.OffsetDateTime;
 import java.util.HashSet;
@@ -39,8 +40,8 @@ public class Tenant {
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "timestamp with time zone")
     private OffsetDateTime createdAt;
 
-    @ManyToMany(mappedBy = "tenants", fetch = FetchType.LAZY)
-    private Set<UserEntity> users = new HashSet<>();
+    @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<UserEntity> users = new ArrayList<>();
 
     @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Account> accounts = new ArrayList<>();
@@ -59,5 +60,19 @@ public class Tenant {
 
     @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Notification> notifications = new ArrayList<>();
+
+    public Boolean validateBillOwnership(Bill bill) {
+        if (!bill.getTenant().getId().equals(this.getId())) {
+            throw new AccessDeniedException("You are not authorized to update this bill.");
+        }
+
+        return true;
+    }
+
+    public void validateCategoryOwnership(Category category) {
+        if(category.getTenant().getId() != this.getId()) {
+            throw new AccessDeniedException("You are not authorized to update this category.");
+        }
+    }
 
 }
